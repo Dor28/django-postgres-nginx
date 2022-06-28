@@ -1,0 +1,38 @@
+version: '3'
+
+services:
+  db:
+    image: postgres:12.0-alpine
+    restart: always 
+    volumes:
+      - postgres_volume:/var/lib/postgresql/data/
+    ports:
+      - "5432"
+    
+    env_file:
+      - labapp/.env
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: sh -c "python manage.py collectstatic --noinput && python manage.py migrate && gunicorn labapp.wsgi:application --bind 0.0.0.0:8000"
+    expose:
+      - "8000"
+    ports:
+      - "8000:8000"
+    env_file:
+      - labapp/.env
+    depends_on:
+      - db
+  
+  nginx:
+    build: 
+        context: .
+        dockerfile: nginx.Dockerfile
+    depends_on:
+      - web
+    
+    
+
+volumes:
+  postgres_volume:
